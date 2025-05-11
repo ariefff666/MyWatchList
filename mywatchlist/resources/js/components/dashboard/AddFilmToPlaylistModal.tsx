@@ -8,6 +8,7 @@ import Modal from '../common/Modal';
 import PrimaryButton from '../common/PrimaryButton';
 import SecondaryButton from '../common/SecondaryButton';
 import TextInput from '../common/TextInput';
+import { showToast } from '../common/ToastNotification';
 
 interface AddFilmToPlaylistModalProps {
     isOpen: boolean;
@@ -57,23 +58,29 @@ const AddFilmToPlaylistModal: React.FC<AddFilmToPlaylistModalProps> = ({ isOpen,
             }
         },
         [searchResults],
-    ); // Tambahkan searchResults agar tidak reset saat load more gagal
+    );
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedSearch = useCallback(
         debounce((query: string, type: string) => {
-            setCurrentPage(1); // Reset ke halaman 1 setiap kali query baru
+            setCurrentPage(1);
             performSearch(query, type, 1);
         }, 600),
         [performSearch],
-    ); // Delay 600ms
+    );
 
     useEffect(() => {
-        debouncedSearch(searchTerm, searchType);
+        if (searchTerm.length === 0 || searchTerm.length >= 3) {
+            debouncedSearch(searchTerm, searchType);
+        } else {
+            setSearchResults([]);
+            setTotalResults(0);
+            setError(null);
+        }
         return () => {
             debouncedSearch.cancel();
         };
-    }, [searchTerm, searchType, debouncedSearch]);
+    }, [searchTerm, searchType]);
 
     const handleLoadMore = () => {
         if (searchResults.length < totalResults && !isLoading) {
@@ -96,10 +103,10 @@ const AddFilmToPlaylistModal: React.FC<AddFilmToPlaylistModalProps> = ({ isOpen,
             });
             // Asumsi backend mengembalikan data film yang sudah di-format (OMDbFilmDetail atau Film dari DB)
             onFilmAdded(response.data.film as OMDbFilmDetail); // Sesuaikan tipe jika backend mengembalikan Film lokal
-            alert(`"${filmResult.Title}" berhasil ditambahkan ke playlist "${currentPlaylist.name}"!`);
+            showToast(`"${filmResult.Title}" berhasil ditambahkan ke playlist "${currentPlaylist.name}"!`, 'success');
         } catch (err: any) {
             console.error('Error adding film to current playlist:', err);
-            alert(err.response?.data?.message || `Gagal menambahkan "${filmResult.Title}".`);
+            showToast(err.response?.data?.message || `Gagal menambahkan "${filmResult.Title}".`, 'error');
         } finally {
             setIsAdding(null);
         }

@@ -53,6 +53,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Halaman Detail Film (Inertia Page)
     Route::get('/film/{imdbId}', [FilmPageController::class, 'show'])->name('film.show.page');
 
+    Route::get('/playlist/{playlist}', [PlaylistController::class, 'showPage'])->name('playlist.show');
+
     // User Ratings
     Route::post('/api/films/{film}/rate', [UserRatingController::class, 'storeOrUpdate'])->name('api.films.rate'); // {film} adalah ID internal film
     // Route::get('/api/films/{film}/my-rating', [UserRatingController::class, 'show'])->name('api.films.my-rating'); // Opsional

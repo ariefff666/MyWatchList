@@ -5,13 +5,14 @@ import axios from 'axios'; // Untuk edit/delete playlist
 import { FilmIcon } from 'lucide-react';
 import React, { useState } from 'react';
 import FilmCard from '../common/FilmCard';
+import { showToast } from '../common/ToastNotification';
 
 interface PlaylistDetailViewProps {
     playlist: Playlist; // Sekarang films adalah opsional, karena bisa jadi belum diload
     onOpenAddFilmModal: () => void;
     onFilmCardClick: (film: Film) => void;
     onRatingUpdated: (filmImdbId: string, newRating: number | null) => void;
-    onFilmRemoved: (playlistId: number, filmDbId: number) => void;
+    onFilmRemoved: (playlistId: number, filmDbId: number, filmTitle: string) => void;
     onPlaylistDetailsUpdated: (updatedPlaylist: Playlist) => void;
     onPlaylistDeleted: (deletedPlaylistId: number) => void;
 }
@@ -29,10 +30,15 @@ const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({
     const [editName, setEditName] = useState(playlist.name);
     const [editDescription, setEditDescription] = useState(playlist.description || '');
 
-    const filmsToDisplay = playlist.films || []; // Handle jika films belum ada
+    const filmsToDisplay = playlist.films || [];
 
     const handleBackToOverview = () => {
-        router.visit(route('dashboard'), { preserveState: true, preserveScroll: true });
+        // Navigasi ke /dashboard. Inertia akan memanggil DashboardController@index
+        // yang akan mengembalikan initialPlaylists dan selectedPlaylistDataFromController = null
+        router.visit(route('dashboard'), {
+            preserveState: false, // Agar data dari controller diambil ulang
+            preserveScroll: true,
+        });
     };
 
     const handleSavePlaylistChanges = async () => {
@@ -43,10 +49,10 @@ const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({
             });
             onPlaylistDetailsUpdated(response.data.playlist);
             setIsEditingPlaylist(false);
-            alert('Playlist berhasil diperbarui!');
+            showToast('Playlist berhasil diperbarui!', 'success');
         } catch (error: any) {
             console.error('Error updating playlist:', error);
-            alert(error.response?.data?.message || 'Gagal memperbarui playlist.');
+            showToast(error.response?.data?.message || 'Gagal memperbarui playlist.', 'success');
         }
     };
 
@@ -55,11 +61,11 @@ const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({
             try {
                 await axios.delete(route('api.playlists.destroy', { playlist: playlist.id }));
                 onPlaylistDeleted(playlist.id);
-                alert(`Playlist "${playlist.name}" berhasil dihapus.`);
+                showToast(`Playlist "${playlist.name}" berhasil dihapus.`, 'success');
                 // Navigasi kembali ke overview akan dihandle oleh DashboardPage
             } catch (error: any) {
                 console.error('Error deleting playlist:', error);
-                alert(error.response?.data?.message || 'Gagal menghapus playlist.');
+                showToast(error.response?.data?.message || 'Gagal menghapus playlist.', 'error');
             }
         }
     };
@@ -142,11 +148,12 @@ const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 md:gap-6 lg:grid-cols-4 xl:grid-cols-5">
                     {filmsToDisplay.map((film) => (
                         <FilmCard
-                            key={film.id} // ID internal film dari DB
-                            film={film} // film adalah tipe Film dari DB
+                            key={film.id}
+                            film={film}
+                            playlistIdContext={playlist.id}
                             onCardClick={() => onFilmCardClick(film)}
                             onRateFilm={(newRating) => onRatingUpdated(film.imdb_id, newRating)}
-                            onRemoveFromPlaylist={() => onFilmRemoved(playlist.id, film.id)}
+                            onRemoveFromPlaylistSucceeded={() => onFilmRemoved(playlist.id, film.id, film.title)}
                         />
                     ))}
                 </div>

@@ -1,5 +1,6 @@
 import PrimaryButton from '@/components/common/PrimaryButton';
 import StarRatingInput from '@/components/common/StarRatingInput';
+import { showToast } from '@/components/common/ToastNotification';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { PageProps as BasePageProps, OMDbFilmDetail, Playlist as PlaylistType, User } from '@/types'; // Pastikan tipe User diimpor
 import {
@@ -68,12 +69,12 @@ export default function FilmDetail() {
                 }),
             );
             await Promise.all(promises);
-            alert(`"${film.Title}" berhasil ditambahkan ke playlist terpilih!`);
+            showToast(`"${film.Title}" berhasil ditambahkan ke playlist terpilih!`, 'success');
             setSelectedPlaylistsToAdd([]); // Reset pilihan
             // Opsional: Refresh data playlist di sidebar atau di tempat lain jika perlu
         } catch (err: any) {
             console.error('Error adding film to selected playlists:', err);
-            alert(err.response?.data?.message || 'Gagal menambahkan film ke beberapa playlist.');
+            showToast(err.response?.data?.message || 'Gagal menambahkan film ke beberapa playlist.', 'error');
         } finally {
             setIsAddingToPlaylists(false);
         }
@@ -83,12 +84,12 @@ export default function FilmDetail() {
         e.preventDefault();
         if (!film || !filmInternalId) {
             // Membutuhkan ID internal film untuk rating
-            alert('Tidak dapat menyimpan rating. Film ini mungkin belum tersinkronisasi dengan database lokal.');
+            showToast('Tidak dapat menyimpan rating. Film ini mungkin belum tersinkronisasi dengan database lokal.', 'info');
             return;
         }
         try {
             await axios.post(route('api.films.rate', { film: filmInternalId }), { rating: ratingData.rating });
-            alert('Rating berhasil disimpan!');
+            showToast('Rating berhasil disimpan!', 'success');
             // Rating akan diupdate di props.userRatingForThisFilm pada kunjungan berikutnya,
             // atau Anda bisa update state lokal jika ingin respons instan tanpa reload.
             // Untuk konsistensi, biarkan Inertia yang handle update data dari server.
@@ -96,7 +97,7 @@ export default function FilmDetail() {
             // props.userRatingForThisFilm = ratingData.rating; // Ini tidak akan re-render, perlu state lokal
         } catch (error: any) {
             console.error('Error saving rating on detail page:', error);
-            alert(error.response?.data?.message || 'Gagal menyimpan rating.');
+            showToast(error.response?.data?.message || 'Gagal menyimpan rating.', 'success');
         }
     };
 
@@ -309,7 +310,7 @@ export default function FilmDetail() {
                                 </div>
 
                                 {/* Rating Pengguna */}
-                                {filmInternalId && ( // Hanya jika film ada di DB lokal
+                                {filmInternalId && (
                                     <form onSubmit={handleRatingSubmit} className="mb-6 rounded-lg bg-gray-700/50 p-4">
                                         <label htmlFor="userRatingPage" className="mb-2 block text-lg font-medium text-gray-100">
                                             Rating Anda:

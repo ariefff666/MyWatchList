@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http; // Untuk fallback ke OMDb jika film tidak ada di DB lokal
+use Illuminate\Support\Facades\DB;
 
 class FilmPageController extends Controller
 {
@@ -100,10 +101,31 @@ class FilmPageController extends Controller
 
         $userPlaylists = $user->playlists()->select('id', 'name')->orderBy('name')->get();
 
+        // Dapatkan semua playlist_id milik user
+        $userPlaylistIds = $user->playlists()->pluck('id');
+
+        // Dapatkan ID film internal dari DB lokal (jika ada)
+        $filmInternalId = $film ? $film->id : null;
+
+        // Cek apakah film ini ada di salah satu playlist user
+        $filmIDFromUser = null;
+
+        if ($filmInternalId) {
+            $isFilmInUserPlaylist = DB::table('film_playlist')
+                ->whereIn('playlist_id', $userPlaylistIds)
+                ->where('film_id', $filmInternalId)
+                ->exists();
+
+            if ($isFilmInUserPlaylist) {
+                $filmIDFromUser = $filmInternalId;
+            }
+        }
+
         return Inertia::render('FilmDetail', [
             'film' => $omdbFilmData, // Kirim data yang konsisten (struktur OMDb)
             'userPlaylists' => $userPlaylists,
             'userRatingForThisFilm' => $userRating, // Rating 1-10
+            'filmInternalId' => $filmIDFromUser, // Rating 1-10
         ])->withViewData(['title' => $omdbFilmData ? 'Detail: ' . $omdbFilmData['Title'] : 'Detail Film']);
     }
 }

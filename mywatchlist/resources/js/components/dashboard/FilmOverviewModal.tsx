@@ -1,3 +1,4 @@
+import { showToast } from '@/components/common/ToastNotification';
 import { Film as LocalFilm, OMDbFilmDetail, Playlist } from '@/types';
 import { ArrowTopRightOnSquareIcon, PlusCircleIcon } from '@heroicons/react/24/solid';
 import { Link, useForm } from '@inertiajs/react';
@@ -86,11 +87,11 @@ const FilmOverviewModal: React.FC<FilmOverviewModalProps> = ({
                 type: filmDetail.Type,
             });
             onFilmAddedToDifferentPlaylist(parseInt(selectedPlaylistIdForAdding), filmDetail);
-            alert(`"${filmDetail.Title}" berhasil ditambahkan ke playlist!`);
-            setSelectedPlaylistIdForAdding(''); // Reset pilihan
+            showToast(`"${filmDetail.Title}" berhasil ditambahkan ke playlist!`, 'success'); // Ganti alert
+            setSelectedPlaylistIdForAdding('');
         } catch (err: any) {
             console.error('Error adding to playlist from overview:', err);
-            alert(err.response?.data?.message || 'Gagal menambahkan film ke playlist.');
+            showToast(err.response?.data?.message || 'Gagal menambahkan film.', 'error'); // Ganti alert
         } finally {
             setIsAddingToPlaylist(false);
         }
@@ -100,7 +101,7 @@ const FilmOverviewModal: React.FC<FilmOverviewModalProps> = ({
         e.preventDefault();
         if (!filmDetail || !initialFilmData) {
             // Membutuhkan initialFilmData untuk ID internal film
-            alert('Tidak dapat menyimpan rating. Data film lokal tidak ditemukan.');
+            showToast('Tidak dapat menyimpan rating. Data film lokal tidak ditemukan.', 'error');
             return;
         }
 
@@ -108,10 +109,10 @@ const FilmOverviewModal: React.FC<FilmOverviewModalProps> = ({
             // Menggunakan ID internal film (initialFilmData.id) untuk endpoint rating
             const response = await axios.post(route('api.films.rate', { film: initialFilmData.id }), { rating: ratingData.rating });
             onRatingUpdated(filmDetail.imdbID, response.data.new_rating);
-            alert('Rating berhasil disimpan!');
+            showToast('Rating berhasil disimpan!', 'success');
         } catch (error: any) {
             console.error('Error saving rating from overview:', error);
-            alert(error.response?.data?.message || 'Gagal menyimpan rating.');
+            showToast(error.response?.data?.message || 'Gagal menyimpan rating.', 'error'); // Ganti alert
         }
     };
 

@@ -175,7 +175,8 @@ class PlaylistController extends Controller
             $film->load(['userRatings' => fn($q) => $q->where('user_id', Auth::id())]);
             return response()->json([
                 'message' => "'{$film->title}' berhasil ditambahkan ke playlist '{$playlist->name}'.",
-                'film' => $film // Kirim data film yang ditambahkan (termasuk rating user jika ada)
+                'film' => $film,
+                'title' => $film->title,
             ], 201);
         }
 
@@ -185,12 +186,78 @@ class PlaylistController extends Controller
     public function removeFilm(Request $request, Playlist $playlist, Film $film)
     {
         // Film $film di sini adalah instance yang di-resolve berdasarkan ID internal film kita
-        $this->authorize('update', $playlist); // User harus bisa update playlist untuk menghapus film
+        $this->authorize('delete', $playlist); // User harus bisa update playlist untuk menghapus film
 
         if ($playlist->films()->detach($film->id)) {
             return response()->json(['message' => "'{$film->title}' berhasil dihapus dari playlist '{$playlist->name}'."]);
         }
 
         return response()->json(['message' => "Gagal menghapus '{$film->title}' dari playlist."], 500);
+    }
+
+    public function showPage(Request $request, Playlist $playlist)
+    {
+        // Pastikan user yang login adalah pemilik playlist
+        $this->authorize('view', $playlist); // Menggunakan PlaylistPolicy
+
+        $user = $request->user();
+
+        // Load film dalam playlist beserta rating user yang login
+        $playlist->load(['films' => function ($query) use ($user) {
+            $query->orderBy('title')->with(['userRatings' => function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            }]);
+        }]);
+
+        $selectedPlaylistData = [
+            'id' => $playlist->id,
+            'name' => $playlist->name,
+            'description' => $playlist->description,
+            'films_count' => $playlist->films->count(),
+            'films' => $playlist->films->map(function ($film) {
+                $userRatingInstance = $film->userRatings->first();
+                return [
+                    'id' => $film->id,
+                    'imdb_id' => $film->imdb_id,
+                    'title' => $film->title,
+                    'year' => $film->year,
+                    'type' => $film->type,
+                    'poster_url' => $film->poster_url,
+                    'plot_short' => $film->plot_short,
+                    // ... field film lainnya yang relevan untuk FilmCard
+                    'current_user_rating' => $userRatingInstance ? $userRatingInstance->rating : null,
+                    'pivot' => $film->pivot,
+                ];
+            })->toArray(),
+            'created_at' => $playlist->created_at->toDateTimeString(),
+            'updated_at' => $playlist->updated_at->toDateTimeString(),
+            'updated_at_formatted' => $playlist->updated_at->diffForHumans(),
+        ];
+
+        // Ambil semua playlist user untuk sidebar dan modal "Tambah ke Playlist" di overview film
+        $allUserPlaylists = $user->playlists()
+            ->withCount('films')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($pl_item) {
+                return [
+                    'id' => $pl_item->id,
+                    'name' => $pl_item->name,
+                    'description' => $pl_item->description,
+                    'films_count' => $pl_item->films_count,
+                        // Tidak perlu film_previews di sini jika tidak ditampilkan di halaman ini
+                ];
+            });
+
+        $userPlaylistsForModal = $user->playlists()->select('id', 'name')->orderBy('name')->get();
+
+
+        // Kita akan tetap merender 'Dashboard' tapi dengan prop yang berbeda
+        return Inertia::render('dashboard', [
+            'initialPlaylists' => $allUserPlaylists, // Untuk PlaylistOverview jika user kembali
+            'userPlaylistsForModal' => $userPlaylistsForModal,
+            'selectedPlaylistDataFromController' => $selectedPlaylistData, // Data playlist yang dipilih
+            'showCreatePlaylistModalFromUrl' => false, // Tidak relevan di sini
+        ]);
     }
 }
