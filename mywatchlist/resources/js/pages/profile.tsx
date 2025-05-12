@@ -1,9 +1,9 @@
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { PageProps as BasePageProps, User } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
-import DeleteUserForm from './profile/partials/DeleteUserForm';
-import UpdatePasswordForm from './profile/partials/UpdatePasswordForm';
-import UpdateProfileInformation from './profile/partials/UpdateProfileInformationForm';
+import DeleteUserForm from './profile/DeleteUserForm';
+import UpdatePasswordForm from './profile/UpdatePasswordForm';
+import UpdateProfileInformation from './profile/UpdateProfileInformationForm';
 
 interface ProfileEditPageProps extends BasePageProps {
     mustVerifyEmail: boolean;
