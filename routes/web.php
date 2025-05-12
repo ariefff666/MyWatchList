@@ -60,50 +60,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Route::get('/api/films/{film}/my-rating', [UserRatingController::class, 'show'])->name('api.films.my-rating'); // Opsional
 });
 
-Route::get('/proxy/omdb/search', function () {
-    $apiKey = config('services.omdb.key');
-    $query = request('q', 'avengers');
-    $response = Http::get('http://www.omdbapi.com/', [
-        'apikey' => $apiKey,
-        's' => $query,
-    ]);
-
-    return response()->json($response->json());
-});
-
-Route::get('/proxy/omdb', function (Request $request) {
-    try {
-        $apiKey = config('services.omdb.key');
-
-        if (!$apiKey) {
-            throw new \Exception('OMDb API key not found.');
-        }
-
-        $queryParams = array_merge($request->all(), ['apikey' => $apiKey]);
-
-        $response = Http::withOptions([
-            'verify' => false,
-        ])->get('https://www.omdbapi.com/', $queryParams);
-
-        if (!$response->successful()) {
-            return response()->json(['error' => 'OMDb request failed.'], $response->status());
-        }
-
-        return $response->json();
-    } catch (\Throwable $e) {
-        return response()->json([
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(), // opsional untuk debug
-        ], 500);
-    }
-});
-
-
-Route::get('/movie/details/{imdbID}', function ($imdbID) {
-    return Inertia::render('movie-detail', [
-        'imdbID' => $imdbID,
-    ]);
-});
-
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
