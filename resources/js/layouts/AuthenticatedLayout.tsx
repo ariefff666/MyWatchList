@@ -279,7 +279,7 @@ export default function AuthenticatedLayout({ user, header, children, onCreateNe
                                 <Link href={route('dashboard')} className="flex items-center">
                                     <ApplicationLogo className="mr-2 block h-9 w-auto fill-current text-blue-500" />
                                     <span className="text-2xl font-bold text-white">
-                                        Film<span className="text-blue-500">Lister</span>
+                                        My<span className="text-blue-500">Watch</span>List
                                     </span>
                                 </Link>
                                 <button onClick={toggleMobileSidebar} className="p-1 text-gray-400 hover:text-white">
